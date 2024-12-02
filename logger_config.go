@@ -9,20 +9,21 @@ import (
 )
 
 const (
-	cfgURLKey     = "url"
-	cfgTokenKey   = "token"
-	cfgChatIDKey  = "chat_id"
-	cfgRetriesKey = "retries"
-	cfgTimeoutKey = "timeout"
+	cfgURLKey           = "url"
+	cfgTokenKey         = "token"
+	cfgChatIDKey        = "chat_id"
+	cfgMessageThreadIDKey = "message_thread_id" // New constant for message_thread_id
+	cfgRetriesKey       = "retries"
+	cfgTimeoutKey       = "timeout"
 
-	cfgNoFileKey   = "no-file"
-	cfgKeepFileKey = "keep-file"
+	cfgNoFileKey        = "no-file"
+	cfgKeepFileKey      = "keep-file"
 
-	cfgTemplateKey    = "template"
-	cfgFilterRegexKey = "filter-regex"
+	cfgTemplateKey      = "template"
+	cfgFilterRegexKey   = "filter-regex"
 
 	cfgBatchEnabledKey       = "batch-enabled"
-	cfgBatchFlushIntervalKey = "batch-flush-interval"
+	cfgBatchFlushIntervalKey  = "batch-flush-interval"
 
 	cfgMaxBufferSizeKey = "max-buffer-size"
 )
@@ -39,6 +40,8 @@ type loggerConfig struct {
 
 	BatchEnabled       bool
 	BatchFlushInterval time.Duration
+
+	MessageThreadID int64 // New field for message_thread_id
 }
 
 var defaultLoggerConfig = loggerConfig{
@@ -109,6 +112,14 @@ func parseLoggerConfig(containerDetails *ContainerDetails) (*loggerConfig, error
 		}
 	}
 
+	// Parse message_thread_id
+	if messageThreadID, ok := containerDetails.Config[cfgMessageThreadIDKey]; ok {
+		cfg.MessageThreadID, err = strconv.ParseInt(messageThreadID, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse %q option: %w", cfgMessageThreadIDKey, err)
+		}
+	}
+
 	if err := cfg.Validate(containerDetails.Config); err != nil {
 		return nil, err
 	}
@@ -129,6 +140,7 @@ func validateDriverOptions(opts map[string]string) error {
 		case cfgURLKey,
 			cfgTokenKey,
 			cfgChatIDKey,
+			cfgMessageThreadIDKey, // Include new key in validation
 			cfgRetriesKey,
 			cfgTimeoutKey,
 			cfgTemplateKey,

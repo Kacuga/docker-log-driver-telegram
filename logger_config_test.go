@@ -116,6 +116,31 @@ func TestParseLoggerConfig(t *testing.T) {
 			},
 		},
 		{
+			name: "custom message_thread_id",
+			containerDetails: ContainerDetails{
+				Config: map[string]string{
+					cfgTokenKey:          "token",
+					cfgChatIDKey:         "chat_id",
+					cfgMessageThreadIDKey: "123456", // New test case for message_thread_id
+				},
+			},
+			want: loggerConfig{
+				ClientConfig: ClientConfig{
+					APIURL:  defaultClientConfig.APIURL,
+					Token:   "token",
+					ChatID:  "chat_id",
+					Retries: defaultClientConfig.Retries,
+					Timeout: defaultClientConfig.Timeout,
+				},
+				Attrs:              make(map[string]string),
+				Template:           defaultLoggerConfig.Template,
+				MaxBufferSize:      defaultLoggerConfig.MaxBufferSize,
+				MessageThreadID:    123456, // Expecting parsed message_thread_id
+				BatchEnabled:       defaultLoggerConfig.BatchEnabled,
+				BatchFlushInterval: defaultLoggerConfig.BatchFlushInterval,
+			},
+		},
+		{
 			name: "failed to parse client config",
 			containerDetails: ContainerDetails{
 				Config: map[string]string{

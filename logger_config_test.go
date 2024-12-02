@@ -121,7 +121,7 @@ func TestParseLoggerConfig(t *testing.T) {
 				Config: map[string]string{
 					cfgTokenKey:          "token",
 					cfgChatIDKey:         "chat_id",
-					cfgMessageThreadIDKey: "123456", // New test case for message_thread_id
+					cfgMessageThreadIDKey: "message_thread_id", // New test case for message_thread_id
 				},
 			},
 			want: loggerConfig{
@@ -135,7 +135,7 @@ func TestParseLoggerConfig(t *testing.T) {
 				Attrs:              make(map[string]string),
 				Template:           defaultLoggerConfig.Template,
 				MaxBufferSize:      defaultLoggerConfig.MaxBufferSize,
-				MessageThreadID:    123456, // Expecting parsed message_thread_id
+				MessageThreadID:    message_thread_id, // Expecting parsed message_thread_id
 				BatchEnabled:       defaultLoggerConfig.BatchEnabled,
 				BatchFlushInterval: defaultLoggerConfig.BatchFlushInterval,
 			},

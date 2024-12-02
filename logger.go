@@ -31,7 +31,7 @@ var (
 
 // client is an interface that represents a Telegram client.
 type client interface {
-	SendMessage(message string) error
+	SendMessage(message string, messageThreadID int64) error // Updated to include message_thread_id
 }
 
 // TelegramLoggerOption is a function that configures a TelegramLogger.
@@ -56,20 +56,17 @@ func WithMaxLogMessageChars(maxLen int) TelegramLoggerOption {
 // TelegramLogger is a logger that sends logs to Telegram.
 // It implements the logger.Logger interface.
 type TelegramLogger struct {
-	client client
-
+	client             client
 	formatter          *messageFormatter
 	cfg                *loggerConfig
 	maxLogMessageChars int
-
-	buffer chan string
-	mu     sync.Mutex
-
-	partialLogsBuffer *partialLogBuffer
-
-	wg     sync.WaitGroup
-	closed chan struct{}
-	logger *zap.Logger
+	buffer             chan string
+	mu                 sync.Mutex
+	partialLogsBuffer  *partialLogBuffer
+	wg                 sync.WaitGroup
+	closed             chan struct{}
+	logger             *zap.Logger
+	messageThreadID    int64 // New field for message thread ID
 }
 
 var _ = (logger.Logger)(&TelegramLogger{})
@@ -78,6 +75,7 @@ var _ = (logger.Logger)(&TelegramLogger{})
 func NewTelegramLogger(
 	logger *zap.Logger,
 	containerDetails *ContainerDetails,
+	messageThreadID int64, // Accept message thread ID
 	opts ...TelegramLoggerOption,
 ) (*TelegramLogger, error) {
 	cfg, err := parseLoggerConfig(containerDetails)
@@ -113,6 +111,7 @@ func NewTelegramLogger(
 		partialLogsBuffer:  newPartialLogBuffer(),
 		closed:             make(chan struct{}),
 		logger:             logger,
+		messageThreadID:    messageThreadID, // Set the message thread ID
 	}
 
 	for _, opt := range opts {
@@ -303,7 +302,7 @@ func (l *TelegramLogger) runBatching() {
 }
 
 func (l *TelegramLogger) send(log string) {
-	if err := l.client.SendMessage(log); err != nil {
+	if err := l.client.SendMessage(log, l.messageThreadID); err != nil { // Pass message_thread_id
 		l.logger.Error("failed to send log message", zap.Error(err))
 	}
 }
@@ -335,10 +334,9 @@ func (l *TelegramLogger) isClosed() bool {
 
 // messageFormatter is a helper struct that formats log messages.
 type messageFormatter struct {
-	template *fasttemplate.Template
-
-	containerDetails *ContainerDetails
-	attrs            map[string]string
+	template          *fasttemplate.Template
+	containerDetails  *ContainerDetails
+	attrs             map[string]string
 }
 
 // newMessageFormatter creates a new messageFormatter.

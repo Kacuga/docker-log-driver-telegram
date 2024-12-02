@@ -39,7 +39,7 @@ func TestTelegramLogger_Log_NoBuffer(t *testing.T) {
 	containerDetails.Config = map[string]string{
 		cfgTokenKey:          "token",
 		cfgChatIDKey:         "chat_id",
-		cfgMessageThreadIDKey: "123456", // Added message_thread_id
+		cfgMessageThreadIDKey: "message_thread_id", // Added message_thread_id
 		cfgBatchEnabledKey:   "false",
 		cfgMaxBufferSizeKey:  "0",
 	}
@@ -68,7 +68,7 @@ func TestTelegramLogger_Log_Buffer(t *testing.T) {
 	containerDetails.Config = map[string]string{
 		cfgTokenKey:              "token",
 		cfgChatIDKey:             "chat_id",
-		cfgMessageThreadIDKey:    "123456", // Added message_thread_id
+		cfgMessageThreadIDKey:    "message_thread_id", // Added message_thread_id
 		cfgBatchEnabledKey:       "true",
 		cfgBatchFlushIntervalKey: "1s",
 	}
@@ -113,7 +113,7 @@ func TestTelegramLogger_Log_Buffer_Drain(t *testing.T) {
 	containerDetails.Config = map[string]string{
 		cfgTokenKey:              "token",
 		cfgChatIDKey:             "chat_id",
-		cfgMessageThreadIDKey:    "123456", // Added message_thread_id
+		cfgMessageThreadIDKey:    "message_thread_id", // Added message_thread_id
 		cfgBatchEnabledKey:       "true",
 		cfgBatchFlushIntervalKey: "1m",
 	}
@@ -150,7 +150,7 @@ func TestTelegramLogger_Log_Buffer_Overflow(t *testing.T) {
 	containerDetails.Config = map[string]string{
 		cfgTokenKey:              "token",
 		cfgChatIDKey:             "chat_id",
-		cfgMessageThreadIDKey:    "123456", // Added message_thread_id
+		cfgMessageThreadIDKey:    "message_thread_id", // Added message_thread_id
 		cfgBatchEnabledKey:       "true",
 		cfgBatchFlushIntervalKey: "1m",
 	}
@@ -207,7 +207,7 @@ func TestTelegramLoggerLog_Truncate(t *testing.T) {
 	containerDetails.Config = map[string]string{
 		cfgTokenKey:          "token",
 		cfgChatIDKey:         "chat_id",
-		cfgMessageThreadIDKey: "123456", // Added message_thread_id
+		cfgMessageThreadIDKey: "message_thread_id", // Added message_thread_id
 		cfgBatchEnabledKey:   "false",
 		cfgMaxBufferSizeKey:  "0",
 	}
@@ -272,7 +272,7 @@ func TestTelegramLoggerLog_PartialLog(t *testing.T) {
 	containerDetails.Config = map[string]string{
 		cfgTokenKey:          "token",
 		cfgChatIDKey:         "chat_id",
-		cfgMessageThreadIDKey: "123456", // Added message_thread_id
+		cfgMessageThreadIDKey: "message_thread_id", // Added message_thread_id
 		cfgBatchEnabledKey:   "false",
 		cfgMaxBufferSizeKey:  "0",
 	}

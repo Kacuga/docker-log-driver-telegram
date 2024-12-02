@@ -3,6 +3,7 @@ package main
 import (
 	"testing"
 	"time"
+	"strings"
 
 	"github.com/docker/docker/api/types/backend"
 	"github.com/docker/docker/daemon/logger"
@@ -10,7 +11,6 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
-	"strings"
 )
 
 var defaultContainerDetails = &ContainerDetails{
@@ -37,10 +37,11 @@ func TestTelegramLogger_Log_NoBuffer(t *testing.T) {
 	zapLogger := zap.NewNop()
 	containerDetails := *defaultContainerDetails
 	containerDetails.Config = map[string]string{
-		cfgTokenKey:         "token",
-		cfgChatIDKey:        "chat_id",
-		cfgBatchEnabledKey:  "false",
-		cfgMaxBufferSizeKey: "0",
+		cfgTokenKey:          "token",
+		cfgChatIDKey:         "chat_id",
+		cfgMessageThreadIDKey: "123456", // Added message_thread_id
+		cfgBatchEnabledKey:   "false",
+		cfgMaxBufferSizeKey:  "0",
 	}
 
 	client := &mockClient{}
@@ -67,11 +68,11 @@ func TestTelegramLogger_Log_Buffer(t *testing.T) {
 	containerDetails.Config = map[string]string{
 		cfgTokenKey:              "token",
 		cfgChatIDKey:             "chat_id",
+		cfgMessageThreadIDKey:    "123456", // Added message_thread_id
 		cfgBatchEnabledKey:       "true",
 		cfgBatchFlushIntervalKey: "1s",
 	}
 
-	// 4 logs with 255 characters each + 1 newline
 	logs := generateLogs(5, (defaultLogMessageChars/4)-1)
 	joinedLogs := strings.Join(logs[:4], "\n")
 
@@ -112,6 +113,7 @@ func TestTelegramLogger_Log_Buffer_Drain(t *testing.T) {
 	containerDetails.Config = map[string]string{
 		cfgTokenKey:              "token",
 		cfgChatIDKey:             "chat_id",
+		cfgMessageThreadIDKey:    "123456", // Added message_thread_id
 		cfgBatchEnabledKey:       "true",
 		cfgBatchFlushIntervalKey: "1m",
 	}
@@ -148,27 +150,21 @@ func TestTelegramLogger_Log_Buffer_Overflow(t *testing.T) {
 	containerDetails.Config = map[string]string{
 		cfgTokenKey:              "token",
 		cfgChatIDKey:             "chat_id",
+		cfgMessageThreadIDKey:    "123456", // Added message_thread_id
 		cfgBatchEnabledKey:       "true",
 		cfgBatchFlushIntervalKey: "1m",
 	}
 
 	client := &mockClient{}
 
-	// This blocks the message processing to test buffer overflow behavior.
 	sent1 := make(chan struct{})
 	client.On("SendMessage", "0000").
 		Return(nil).
 		Run(func(args mock.Arguments) {
-			// Notify that message processing has started
 			sent1 <- struct{}{}
-
-			// Block until explicitly released, simulating slow processing
 			<-sent1
 		})
 
-	// Set up second message handler
-	// When buffer overflows, messages "2" and "3" will be batched together
-	// Message "1" will be dropped due to buffer capacity limit
 	sent2 := make(chan struct{})
 	client.On("SendMessage", "2\n3").
 		Return(nil).
@@ -186,24 +182,16 @@ func TestTelegramLogger_Log_Buffer_Overflow(t *testing.T) {
 
 	l.client = client
 
-	// Send first message.
 	err = l.Log(&logger.Message{Line: []byte("0000")})
 	require.NoError(t, err)
 
-	// Wait for first message to start processing
-	// This ensures the message is in the "sending" state
 	<-sent1
 
-	// Send three more messages while first is blocked:
-	// - Message "1" will be dropped due to buffer overflow
-	// - Messages "2" and "3" will be queued and later batched
 	for _, message := range []string{"1", "2", "3"} {
 		err = l.Log(&logger.Message{Line: []byte(message)})
 		require.NoError(t, err)
 	}
 
-	// Unblock the first message processing
-	// This allows the batched messages to be processed
 	sent1 <- struct{}{}
 
 	waitWithTimeout(t, sent2, 3*time.Second, "timeout waiting for the second message to be sent")
@@ -217,10 +205,11 @@ func TestTelegramLoggerLog_Truncate(t *testing.T) {
 	zapLogger := zap.NewNop()
 	containerDetails := *defaultContainerDetails
 	containerDetails.Config = map[string]string{
-		cfgTokenKey:         "token",
-		cfgChatIDKey:        "chat_id",
-		cfgBatchEnabledKey:  "false",
-		cfgMaxBufferSizeKey: "0",
+		cfgTokenKey:          "token",
+		cfgChatIDKey:         "chat_id",
+		cfgMessageThreadIDKey: "123456", // Added message_thread_id
+		cfgBatchEnabledKey:   "false",
+		cfgMaxBufferSizeKey:  "0",
 	}
 
 	longMessage := strings.Repeat("a", defaultLogMessageChars+1)
@@ -265,7 +254,6 @@ func TestTelegramLoggerLog_PartialLog(t *testing.T) {
 		Line:         []byte("123"),
 		PLogMetaData: &backend.PartialLogMetaData{ID: "group_id"},
 	}
-	_ = assembledLog
 
 	formatter, err := newMessageFormatter(defaultContainerDetails, nil, "{log}")
 	assert.NoError(t, err)
@@ -282,10 +270,11 @@ func TestTelegramLoggerLog_PartialLog(t *testing.T) {
 	zapLogger := zap.NewNop()
 	containerDetails := *defaultContainerDetails
 	containerDetails.Config = map[string]string{
-		cfgTokenKey:         "token",
-		cfgChatIDKey:        "chat_id",
-		cfgBatchEnabledKey:  "false",
-		cfgMaxBufferSizeKey: "0",
+		cfgTokenKey:          "token",
+		cfgChatIDKey:         "chat_id",
+		cfgMessageThreadIDKey: "123456", // Added message_thread_id
+		cfgBatchEnabledKey:   "false",
+		cfgMaxBufferSizeKey:  "0",
 	}
 
 	l, err := NewTelegramLogger(zapLogger, &containerDetails)
@@ -422,7 +411,6 @@ func TestPartialLogBuffer(t *testing.T) {
 	assert.Equal(t, string(assembledLog.Line), string(log.Line))
 	assert.Equal(t, assembledLog.Timestamp, log.Timestamp)
 
-	// check delete log after assembled chunks
 	log, last = b.Append(
 		&logger.Message{
 			Line:         []byte("must be first"),
